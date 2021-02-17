@@ -1,0 +1,221 @@
+<!--
+
+    (c) 2003-2019 MuleSoft, Inc. The software in this package is published under
+    the terms of the Commercial Free Software license V.1 a copy of which has been
+    included with this distribution in the LICENSE.md file.
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- JQuery will be required for this demo -->
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.js"></script>
+  <!-- Import Twitter bootstrap libs + css -->
+  <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap.css">
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.js"></script>
+  <!-- Keep this simple ... define CSS for this simple webpage in the same file -->
+  <style>
+    body {
+      padding-top: 40px;
+      padding-bottom: 40px;
+      background-color: #eee;
+    }
+    .demo-form {
+      max-width: 500px;
+      padding: 15px;
+      margin: 0 auto;
+    }
+    .demo-form .demo-heading,
+    .demo-form .checkbox {
+      margin-bottom: 10px;
+    }
+    .demo-form .checkbox {
+      font-weight: normal;
+    }
+    .demo-form .form-control {
+      position: relative;
+      height: auto;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .demo-form .form-control:focus {
+      z-index: 2;
+    }
+    input[type="radio"] {
+        margin-right: 15px;
+    }
+    textarea.mono {
+        border:1px solid #999999;
+        font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+    }
+    #listResults tr td {
+      cursor: pointer;
+    }
+    .centered {
+    width:50%;
+    margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <script type="text/javascript">
+
+    $(document).ready( function() {
+
+      var getDiv = $('#getDiv');
+      var getForm = $('#getForm');
+      var getResults = $('#getResults');
+
+      var insertDiv = $('#insertDiv');
+      var insertForm = $('#insertForm');
+      var insertResults = $('#insertResults');
+
+      var deleteDiv = $('#deleteDiv');
+      var deleteForm = $('#deleteForm');
+      var deleteResults = $('#deleteResults');
+
+      var btn = null;
+
+      $('button').click(function(){
+        btn = $(this);
+        btn.button('loading'); // Triggers the loading spinner for every button that is clicked
+      });
+
+
+      insertForm.submit(function() {
+        $.ajax({
+          type: 'POST',
+          url: '/post',
+          data: document.getElementById("insertInput").value, // Content of textarea as JSON in request body
+          contentType:"application/json",
+          success: function(response) {
+            insertResults.val(JSON.stringify(response, null, 2));
+            getDiv.collapse('show');
+            deleteDiv.collapse('show');
+          },
+          error: function(request, status, error){
+            alert('Could not process the operation. Please, try again');
+          }
+        }).always(function () {
+          btn.button('reset');
+        });
+        return false; // Let jQuery handle the form submission
+      });
+      
+      getForm.submit(function() {
+        $.ajax({
+          type: 'GET',
+          url: '/get',
+          data: getForm.serialize(), // Serialized form URL-encoded input
+          success: function(response) {
+            getResults.val(JSON.stringify(response, null, 2));
+          },
+          error: function(request, status, error){
+            alert('Could not process the operation. Please, try again');
+          }
+        }).always(function () {
+          btn.button('reset');
+        });
+        return false; // Let jQuery handle the form submission
+      });
+
+      deleteForm.submit(function() {
+        $.ajax({
+          type: 'GET',
+          url: '/delete',
+          data: deleteForm.serialize(), // Serialized form URL-encoded input
+          success: function(response) {
+            deleteResults.val(response);
+          },
+          error: function(request, status, error){
+            alert('Could not process the operation. Please, try again');
+          }
+        }).always(function () {
+          btn.button('reset');
+        });
+        return false; // Let jQuery handle the form submission
+      });
+    });
+    </script>
+    <div class="container">
+      <h4>NetSuite RESTlet Demo</h4>
+      <hr>
+      <div class="panel-group" id="accordion">
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title demo-heading">
+              <a data-toggle="collapse" data-parent="#accordion" href="#insertDiv">Insert record</a>
+            </h2>
+          </div>
+          <div id="insertDiv" class="panel-collapse collapse in">
+            <div class="panel-body">
+              <form id="insertForm" class="demo-form" role="form" >
+                <label>Record</label>
+                <textarea class="form-control mono" rows="10" id="insertInput" name="input">{
+    "recordtype":"customer",
+    "entityid":"Big 5 Sporting Goods",
+    "companyname":"Big 5 Sporting Goods",
+    "subsidiary":"1",
+    "email":"jdoe@email.com",
+    "id": "1001"
+}</textarea>
+                <button type="submit" class="btn btn-lg btn-primary btn-block" data-loading-text="<img src='http://i.giphy.com/lijuimVKUcwRa.gif' height=16 width=16 /> Processing...">Insert</button>
+              </form>
+              <label>Response</label>
+              <textarea class="form-control mono" rows="10" id="insertResults" readonly></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title demo-heading">
+              <a data-toggle="collapse" data-parent="#accordion" href="#getDiv">Get record</a>
+            </h2>
+          </div>
+          <div id="getDiv" class="panel-collapse collapse">
+            <div class="panel-body">
+              <form id="getForm" class="demo-form" role="form" >
+                <label>ID</label>
+                <input id="getIdInput" type="text" name="id" placeholder="ID" value="1001" required class="form-control"><br>
+                <label>Record Type</label>
+                <input id="getRecordTypeInput" type="text" name="recordtype" placeholder="Record Type" value="customer" required class="form-control"><br>
+                <button type="submit" class="btn btn-lg btn-primary btn-block" data-loading-text="<img src='http://i.giphy.com/lijuimVKUcwRa.gif' height=16 width=16 /> Processing...">Get</button>
+              </form>
+              <label>Response</label>
+              <textarea class="form-control mono" rows="10" id="getResults" readonly></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title demo-heading">
+              <a data-toggle="collapse" data-parent="#accordion" href="#deleteDiv">Delete record</a>
+            </h2>
+          </div>
+          <div id="deleteDiv" class="panel-collapse collapse">
+            <div class="panel-body">
+              <form id="deleteForm" class="demo-form" role="form" >
+                <label>ID</label>
+                <input id="deleteIdInput" type="text" name="id" placeholder="ID" value="1001" required class="form-control"><br>
+                <label>Record Type</label>
+                <input id="deleteRecordTypeInput" type="text" name="recordtype" placeholder="Record Type" value="customer" required class="form-control"><br>
+                <button type="submit" class="btn btn-lg btn-primary btn-block" data-loading-text="<img src='http://i.giphy.com/lijuimVKUcwRa.gif' height=16 width=16 /> Processing...">Delete</button>
+              </form>
+              <label>Response</label>
+              <textarea class="form-control mono" rows="1" id="deleteResults" readonly></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:netsuite="http://www.mulesoft.org/schema/mule/netsuite"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/netsuite http://www.mulesoft.org/schema/mule/netsuite/current/mule-netsuite.xsd">
+	<configuration-properties file="mule-app.properties" doc:name="Configuration properties"/>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="9e16fe39-2678-4a61-b7d9-4059a245638e" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<netsuite:rest-config name="NetSuite_Rest_config" doc:name="NetSuite Rest config" doc:id="bf6743bb-cd29-4256-bd2c-82a05234910e" >
+		<netsuite:restlet-login-connection email="jade.tran@goexpedi.com" password="H@ppiness2021" account="5691377_SB1" roleId="customdeploycustomdeploy2" applicationId="5BF1D6F1-982F-4C5C-8018-462AAE14CC1"/>
+	</netsuite:rest-config>
+	<flow name="html-form-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/" doc:name="/"/>
+        <parse-template location="form.html" doc:name="Parse Template"/>
+    </flow>
+    <flow name="restletGet">
+        <http:listener config-ref="HTTP_Listener_config" path="/get" doc:name="/get"/>
+        <ee:transform doc:name="Transform GET Input" doc:id="f48711c5-77a3-4b3b-b6ed-f6d499ab56a6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "id": attributes.queryParams.id,
+    "recordtype": attributes.queryParams.recordtype
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+        <netsuite:call-restlet-get script="${netsuite.script}" deploy="${netsuite.deploy}" doc:name="Call RESTlet (GET)" doc:id="c6085bc8-83c8-492f-82ba-196198452b30" config-ref="NetSuite_Rest_config"/>
+		<ee:transform doc:name="to JSON" doc:id="83782ba6-eb10-4373-8377-00749340b1c1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="restletPost">
+        <http:listener config-ref="HTTP_Listener_config" path="/post" doc:name="/post"/>
+        <ee:transform doc:name="Transform POST Input" doc:id="3ef97b3e-f876-4b61-8c24-4e037704feee" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+        <netsuite:call-restlet-post deploy="${netsuite.deploy}" script="${netsuite.script}" doc:name="NetSuite RESTlet (POST)" config-ref="NetSuite_Rest_config"/>
+		<ee:transform doc:name="to JSON" doc:id="da85cfe7-cf70-4c50-9416-a517754810c8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="restletDelete">
+        <http:listener config-ref="HTTP_Listener_config" path="/delete" doc:name="/delete"/>
+        <ee:transform doc:name="Transform DELETE Input" doc:id="f4da25bd-a908-4bf2-809f-878dd3cc8a45" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "id": attributes.queryParams.id,
+    "recordtype": attributes.queryParams.'recordtype'
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+        <netsuite:call-restlet-delete deploy="${netsuite.deploy}" script="${netsuite.script}" doc:name="NetSuite RESTlet (DELETE)" config-ref="NetSuite_Rest_config"/>
+        <set-payload value="Record deleted successfully" doc:name="Set Payload"/>
+        <logger  level="INFO" doc:name="Logger"/>
+    </flow>
+	</mule>
